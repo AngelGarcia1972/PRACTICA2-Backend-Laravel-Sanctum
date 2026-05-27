@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use Illuminate\Http\Request;
+use App\Http\Resources\ProductoResource;
 
 class ProductoController extends Controller
 {
     public function index()
     {
-        return response()->json(Producto::all(), 200);
+        return ProductoResource::collection(Producto::all());
     }
 
     public function show($id)
@@ -18,18 +19,26 @@ class ProductoController extends Controller
         if (!$producto) {
             return response()->json(['mensaje' => 'Producto no encontrado'], 404);
         }
-        return response()->json($producto, 200);
+        return new ProductoResource($producto);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string',
-            'precio' => 'required|numeric',
-            'stock'  => 'required|integer',
+            'nombre'  => 'required|string',
+            'precio'  => 'required|numeric',
+            'stock'   => 'required|integer',
+            'imagen'  => 'nullable|image|mimes:jpg,png,webp|max:2048',
         ]);
-        $producto = Producto::create($request->all());
-        return response()->json($producto, 201);
+
+        $data = $request->except('imagen');
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')
+                ->store('productos', 'public');
+        }
+
+        return new ProductoResource(Producto::create($data));
     }
 
     public function update(Request $request, $id)
@@ -38,8 +47,16 @@ class ProductoController extends Controller
         if (!$producto) {
             return response()->json(['mensaje' => 'Producto no encontrado'], 404);
         }
-        $producto->update($request->all());
-        return response()->json($producto, 200);
+
+        $data = $request->except('imagen');
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')
+                ->store('productos', 'public');
+        }
+
+        $producto->update($data);
+        return new ProductoResource($producto);
     }
 
     public function destroy($id)
