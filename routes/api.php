@@ -1,29 +1,27 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\V2\ProductoController as V2ProductoController;
+use Illuminate\Support\Facades\Route;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+Route::prefix('v1')->name('v1.')->group(function () {
 
-Route::get('/productos',      [ProductoController::class, 'index']);
-Route::get('/productos/{id}', [ProductoController::class, 'show']);
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login',    [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/me',      [AuthController::class, 'me']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me',      [AuthController::class, 'me']);
 
-    Route::post('/productos',        [ProductoController::class, 'store']);
-    Route::put('/productos/{id}',    [ProductoController::class, 'update']);
-    Route::delete('/productos/{id}', [ProductoController::class, 'destroy']);
+        Route::apiResource('productos', ProductoController::class);
+        Route::apiResource('pedidos',   PedidoController::class);
+    });
+});
 
-    Route::post('/pedidos',      [PedidoController::class, 'store']);
-    Route::get('/pedidos/{id}',  [PedidoController::class, 'show']);
-
-    Route::post('/broadcasting/auth', function () {
-        return Broadcast::auth(request());
+Route::prefix('v2')->name('v2.')->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::apiResource('productos', V2ProductoController::class);
     });
 });
