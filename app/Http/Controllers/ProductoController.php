@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use App\Http\Resources\ProductoResource;
+use Illuminate\Support\Facades\Cache;
 
 class ProductoController extends Controller
 {
@@ -20,7 +21,11 @@ class ProductoController extends Controller
      */
     public function index(Request $request)
     {
-        return ProductoResource::collection(Producto::all());
+        $productos = Cache::remember('productos.todos', 300, function () {
+            return Producto::all();
+        });
+
+        return ProductoResource::collection($productos);
     }
 
     /**
@@ -80,7 +85,10 @@ class ProductoController extends Controller
                 ->store('productos', 'public');
         }
 
-        return new ProductoResource(Producto::create($data));
+        $producto = Producto::create($data);
+        Cache::forget('productos.todos');
+
+        return new ProductoResource($producto);
     }
 
     /**
@@ -119,6 +127,8 @@ class ProductoController extends Controller
         }
 
         $producto->update($data);
+        Cache::forget('productos.todos');
+
         return new ProductoResource($producto);
     }
 
@@ -141,6 +151,8 @@ class ProductoController extends Controller
             return response()->json(['mensaje' => 'Producto no encontrado'], 404);
         }
         $producto->delete();
+        Cache::forget('productos.todos');
+
         return response()->json(null, 204);
     }
 }
